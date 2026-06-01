@@ -91,7 +91,7 @@ def run_agent() -> dict:
         # TODO: Implement the ReAct loop.
         #
         # The loop should:
-        # 1. Initialise   - and  result = {}
+        # 1. Initialise  history = []  and  result = {}
         # 2. Loop up to AGENT_CONFIG["max_iterations"] times:
         #    a. Build user_msg:
         #       - First iteration: f"Context:\n{context}"
