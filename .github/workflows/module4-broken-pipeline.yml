@@ -35,12 +35,12 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Run broken_app.py
+      - name: Run broken app.py
         id: run
         # continue-on-error so the triage job always runs
         continue-on-error: true
         run: |
-          python module4/broken_app.py 2>&1 | tee /tmp/broken_app.log
+          python module4/app.py 2>&1 | tee /tmp/broken_app.log
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
       - name: Show raw failure log
