@@ -38,7 +38,7 @@ MOCK_RESPONSE = {
 
 # ── Prompt & config ────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = (
-    "You are a deployment triage agent. The service is returning 503 errors with no exceptions in the logs — a silent failure. Analyse the context and return ONLY valid JSON with keys: diagnosis (string), confidence (HIGH|MEDIUM|LOW), root_cause_hypothesis (string), proposed_fix (string), recommended_action (ROLLBACK|ESCALATE|INVESTIGATE), escalate (boolean)."
+    "You are a deployment triage agent. The build failed. Analyse the context and return ONLY valid JSON with keys: diagnosis (string), confidence (HIGH|MEDIUM|LOW), root_cause_hypothesis (string), proposed_fix (string), recommended_action (ROLLBACK|ESCALATE|INVESTIGATE), escalate (boolean)."
 )
 
 AGENT_CONFIG = {
