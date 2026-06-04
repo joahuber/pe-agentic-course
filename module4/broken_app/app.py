@@ -34,7 +34,7 @@ def process_requests(requests: list) -> int:
     count = 0
     for req in requests:
         count = count + 1
-        count += statis          # Bug 1: NameError — 'statis' is not defined (typo; intended variable never declared)
+        count += status_count          # Bug 1: NameError — 'status_count' is not defined (typo; intended variable never declared)
         log.info(f"Processed request: {req}")
     return count
 

@@ -38,24 +38,23 @@ MOCK_RESPONSE = {
 
 # ── Prompt & config ────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = (
-    "You are a deployment triage agent. The build failed. Analyse the context and return ONLY valid JSON with keys: diagnosis (string), confidence (HIGH|MEDIUM|LOW), root_cause_hypothesis (string), proposed_fix (string), recommended_action (ROLLBACK|ESCALATE|INVESTIGATE), escalate (boolean)."
+    "You are a deployment triage agent. The build failed. Rate your confidence based on the provided context. Set escalate to true if the confidence is medium or low. Analyse the context and return ONLY valid JSON with keys: diagnosis (string), confidence (HIGH|MEDIUM|LOW), root_cause_hypothesis (string), proposed_fix (string), recommended_action (ROLLBACK|ESCALATE|INVESTIGATE), escalate (boolean)."
+    "HIGH confidence requires a deterministic log trace (exception, line number, etc.)."
+    + "Use MEDIUM confidence when inferring infrastructure state from indirect signals, such as a silent 503 with no exceptions."
 )
+
 
 AGENT_CONFIG = {
     "model": "claude-opus-4-5-20251101",
     "max_tokens": 1024,
     "max_iterations": 3,
-    "context_fields": [
-        "trigger",
-        "service",
-        "deploy_id",
-        "health_check",
-        "logs"
-    ]
+    "context_fields": ["trigger", "service", "deploy_id", "health_check", "logs"],
 }
+
 
 def load_sample() -> str:
     sample = Path(__file__).parent / "sample_data.json"
+    #sample = Path(__file__).parent / "sample_migration_failure.json"
     return sample.read_text()
 
 
@@ -64,7 +63,9 @@ def run_agent() -> dict:
 
     if MOCK_MODE:
         print("[MOCK MODE] Skipping Claude API — returning pre-defined response.")
-        print("[MOCK MODE] Note: MEDIUM confidence + escalate=true is the correct answer for silent 503s.\n")
+        print(
+            "[MOCK MODE] Note: MEDIUM confidence + escalate=true is the correct answer for silent 503s.\n"
+        )
         result = MOCK_RESPONSE
     else:
         # TODO: Call ask() with SYSTEM_PROMPT and the deployment context.
@@ -83,7 +84,7 @@ def run_agent() -> dict:
             system=SYSTEM_PROMPT,
             user=f"Context:\n{context}",
             model=AGENT_CONFIG["model"],
-            max_tokens=AGENT_CONFIG["max_tokens"]
+            max_tokens=AGENT_CONFIG["max_tokens"],
         )
 
     print(json.dumps(result, indent=2))
