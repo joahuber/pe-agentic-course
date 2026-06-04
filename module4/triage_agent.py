@@ -79,8 +79,11 @@ def run_agent() -> dict:
         # Key teaching point: the correct answer here is MEDIUM confidence + escalate=true.
         # A silent 503 with no exceptions means you are inferring state, not reading a traceback.
         # Assign the return value to  result  so it flows into the print/save below.
-        raise NotImplementedError(
-            "Complete run_agent() — call ask() with SYSTEM_PROMPT and the context."
+        result = ask(
+            system=SYSTEM_PROMPT,
+            user=f"Context:\n{context}",
+            model=AGENT_CONFIG["model"],
+            max_tokens=AGENT_CONFIG["max_tokens"]
         )
 
     print(json.dumps(result, indent=2))
