@@ -55,73 +55,73 @@ MOCK_MODE = "--mock" in sys.argv or os.environ.get("MOCK_MODE") == "1"
 MOCK_SCENARIOS = {
     "no_conflict": {
         "gate_result": {
-            "decision":    "APPROVE",
-            "confidence":  "HIGH",
-            "rationale":   "All 6 quality gates pass. Test coverage 96.2%, zero SAST findings, Lighthouse 91/100.",
+            "decision": "APPROVE",
+            "confidence": "HIGH",
+            "rationale": "All 6 quality gates pass. Test coverage 96.2%, zero SAST findings, Lighthouse 91/100.",
             "blocking_issues": [],
-            "conditions":  [],
-            "risk_score":  "LOW",
-            "escalate":    False,
+            "conditions": [],
+            "risk_score": "LOW",
+            "escalate": False,
         },
         "rollback_result": {
             "rollback_recommended": False,
-            "severity":  "NONE",
-            "trigger":   "No rollback-trigger gates failed.",
-            "escalate":  False,
+            "severity": "NONE",
+            "trigger": "No rollback-trigger gates failed.",
+            "escalate": False,
         },
         "conflict": {
             "detected": False,
-            "type":     None,
+            "type": None,
             "resolution": "SYNTHESISE",
-            "summary":  "Gate Agent: APPROVE. Rollback Agent: no rollback. Consistent — safe to deploy.",
+            "summary": "Gate Agent: APPROVE. Rollback Agent: no rollback. Consistent — safe to deploy.",
         },
     },
     "partial_conflict": {
         "gate_result": {
-            "decision":    "APPROVE_WITH_CONDITIONS",
-            "confidence":  "MEDIUM",
-            "rationale":   "Coverage at 74% (below 80% threshold) but not regressed. No critical failures.",
+            "decision": "APPROVE_WITH_CONDITIONS",
+            "confidence": "MEDIUM",
+            "rationale": "Coverage at 74% (below 80% threshold) but not regressed. No critical failures.",
             "blocking_issues": [],
-            "conditions":  ["Coverage must not regress below 74% in next 3 PRs"],
-            "risk_score":  "MEDIUM",
-            "escalate":    False,
+            "conditions": ["Coverage must not regress below 74% in next 3 PRs"],
+            "risk_score": "MEDIUM",
+            "escalate": False,
         },
         "rollback_result": {
             "rollback_recommended": True,
-            "severity":   "SCHEDULED",
-            "trigger":    "latency_p95_delta: P95 latency increased 7.2% (threshold 10%) — below rollback trigger.",
+            "severity": "SCHEDULED",
+            "trigger": "latency_p95_delta: P95 latency increased 7.2% (threshold 10%) — below rollback trigger.",
             "rollback_target": "v1.8.2",
-            "escalate":   False,
+            "escalate": False,
         },
         "conflict": {
             "detected": True,
-            "type":     "SOFT_CONFLICT",
+            "type": "SOFT_CONFLICT",
             "resolution": "SOFT_ESCALATE",
-            "summary":  "Gate Agent: APPROVE_WITH_CONDITIONS. Rollback Agent: SCHEDULED rollback. Soft conflict — inform on-call but no immediate action required.",
+            "summary": "Gate Agent: APPROVE_WITH_CONDITIONS. Rollback Agent: SCHEDULED rollback. Soft conflict — inform on-call but no immediate action required.",
         },
     },
     "full_conflict": {
         "gate_result": {
-            "decision":    "APPROVE",
-            "confidence":  "HIGH",
-            "rationale":   "CI pipeline passed all gates before deploy. Snapshot taken 45 minutes ago.",
+            "decision": "APPROVE",
+            "confidence": "HIGH",
+            "rationale": "CI pipeline passed all gates before deploy. Snapshot taken 45 minutes ago.",
             "blocking_issues": [],
-            "conditions":  [],
-            "risk_score":  "LOW",
-            "escalate":    False,
+            "conditions": [],
+            "risk_score": "LOW",
+            "escalate": False,
         },
         "rollback_result": {
             "rollback_recommended": True,
-            "severity":   "IMMEDIATE",
-            "trigger":    "latency_p95_delta exceeded 18.4% and error_rate_pct > 10% post-deploy.",
+            "severity": "IMMEDIATE",
+            "trigger": "latency_p95_delta exceeded 18.4% and error_rate_pct > 10% post-deploy.",
             "rollback_target": "v1.8.2",
-            "escalate":   False,
+            "escalate": False,
         },
         "conflict": {
             "detected": True,
-            "type":     "HARD_CONFLICT",
+            "type": "HARD_CONFLICT",
             "resolution": "SAFETY_FIRST_ESCALATE",
-            "summary":  "Gate Agent: APPROVE (stale pre-deploy snapshot). Rollback Agent: IMMEDIATE rollback (live post-deploy data). Hard conflict — Safety First: escalate and halt all deploys until human reviews.",
+            "summary": "Gate Agent: APPROVE (stale pre-deploy snapshot). Rollback Agent: IMMEDIATE rollback (live post-deploy data). Hard conflict — Safety First: escalate and halt all deploys until human reviews.",
         },
     },
 }
@@ -153,7 +153,7 @@ Only recommend rollback if deploy_age_minutes < 30 AND rollback_available=true.
 """
 
 AGENT_CONFIG = {
-    "model":      "claude-opus-4-5-20251101",
+    "model": "claude-opus-4-5-20251101",
     "max_tokens": 1024,
 }
 
@@ -170,10 +170,16 @@ def run_gate_agent(context: dict) -> dict:
     """
     if MOCK_MODE:
         print("[gate_agent] [MOCK] Returning pre-defined gate evaluation.")
-        return {}   # filled in by main() from MOCK_SCENARIOS
+        return {}  # filled in by main() from MOCK_SCENARIOS
 
     # TODO: call ask() with GATE_SYSTEM_PROMPT and return the result
-    raise NotImplementedError("Implement run_gate_agent()")
+    result = ask(
+        system=GATE_SYSTEM_PROMPT,
+        user=f"Pipeline data:\n{json.dumps(context, indent=2)}",
+        model=AGENT_CONFIG["model"],
+        max_tokens=AGENT_CONFIG["max_tokens"],
+    )
+    return result
 
 
 def run_rollback_agent(context: dict) -> dict:
@@ -183,10 +189,10 @@ def run_rollback_agent(context: dict) -> dict:
     """
     if MOCK_MODE:
         print("[rollback_agent] [MOCK] Returning pre-defined rollback assessment.")
-        return {}   # filled in by main() from MOCK_SCENARIOS
+        return {}  # filled in by main() from MOCK_SCENARIOS
 
     # TODO: call ask() with ROLLBACK_SYSTEM_PROMPT and return the result
-    raise NotImplementedError("Implement run_rollback_agent()")
+    return ask(ROLLBACK_SYSTEM_PROMPT, json.dumps(context))
 
 
 def detect_conflict(gate_result: dict, rollback_result: dict) -> dict:
@@ -200,8 +206,40 @@ def detect_conflict(gate_result: dict, rollback_result: dict) -> dict:
 
     Return a dict with keys: detected (bool), type (str|None), resolution (str), summary (str).
     """
-    # TODO: implement conflict detection logic
-    raise NotImplementedError("Implement detect_conflict()")
+    gate_decision = gate_result.get("decision", "")
+    rollback_severity = rollback_result.get("severity", "NONE")
+
+    if gate_decision == "APPROVE" and rollback_severity == "IMMEDIATE":
+        return {
+            "detected": True,
+            "type": "HARD_CONFLICT",
+            "resolution": "SAFETY_FIRST_ESCALATE",
+            "summary": (
+                f"Gate Agent: {gate_decision}. Rollback Agent: {rollback_severity} rollback. "
+                "Hard conflict — Safety First: escalate and halt all deploys until human reviews."
+            ),
+        }
+
+    if gate_decision.startswith("APPROVE") and rollback_severity == "SCHEDULED":
+        return {
+            "detected": True,
+            "type": "SOFT_CONFLICT",
+            "resolution": "SOFT_ESCALATE",
+            "summary": (
+                f"Gate Agent: {gate_decision}. Rollback Agent: {rollback_severity} rollback. "
+                "Soft conflict — inform on-call but no immediate action required."
+            ),
+        }
+
+    return {
+        "detected": False,
+        "type": None,
+        "resolution": "SYNTHESISE",
+        "summary": (
+            f"Gate Agent: {gate_decision}. Rollback Agent: {rollback_severity}. "
+            "Consistent — safe to deploy."
+        ),
+    }
 
 
 def main():
@@ -216,29 +254,31 @@ def main():
     args = parser.parse_args()
 
     context = load_sample()
-    print(f"[orchestrator] Loaded incident: {context.get('incident', {}).get('id', 'unknown')}")
+    print(
+        f"[orchestrator] Loaded incident: {context.get('incident', {}).get('id', 'unknown')}"
+    )
 
     if MOCK_MODE:
         scenario_data = MOCK_SCENARIOS[args.scenario]
-        gate_result     = scenario_data["gate_result"]
+        gate_result = scenario_data["gate_result"]
         rollback_result = scenario_data["rollback_result"]
-        conflict        = scenario_data["conflict"]
+        conflict = scenario_data["conflict"]
         print(f"[orchestrator] [MOCK MODE] Using scenario: {args.scenario}\n")
     else:
         print("[orchestrator] Running Gate Agent and Rollback Agent in parallel...")
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            gate_future     = executor.submit(run_gate_agent,     context)
+            gate_future = executor.submit(run_gate_agent, context)
             rollback_future = executor.submit(run_rollback_agent, context)
-            gate_result     = gate_future.result()
+            gate_result = gate_future.result()
             rollback_result = rollback_future.result()
 
         conflict = detect_conflict(gate_result, rollback_result)
 
     # ── Output ──────────────────────────────────────────────────────────────────
     result = {
-        "gate_agent":     gate_result,
+        "gate_agent": gate_result,
         "rollback_agent": rollback_result,
-        "conflict":       conflict,
+        "conflict": conflict,
     }
 
     print("\n── Gate Agent ────────────────────────────────────────────────")
