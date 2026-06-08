@@ -462,8 +462,14 @@ def run_step_fix_or_escalate(
     """
     context = {"event": event, "diagnose": diagnose, "gate": gate, "conflict": conflict}
     result = run_step("FIX_OR_ESCALATE", FIX_OR_ESCALATE_PROMPT, context)
-    if result.get("path") == "AUTO_FIX" and result.get("auto_fix_script"):
-        fix_path = save_fix_script(result["auto_fix_script"], pipeline_id)
+
+    # Determine the fix script to use: prefer the agent's own script (AUTO_FIX),
+    # fall back to the DIAGNOSE fix when escalating with a known fix for human review.
+    fix_script = result.get("auto_fix_script") or (
+        diagnose.get("fix_script") if result.get("path") == "ESCALATE" else ""
+    )
+    if fix_script:
+        fix_path = save_fix_script(fix_script, pipeline_id)
         result["fix_script_path"] = str(fix_path)
         pr_url = create_fix_pr(result, pipeline_id, str(fix_path))
         if pr_url:
