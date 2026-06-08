@@ -10,7 +10,7 @@ Bug 1: line 22 — `statis = statis + 1`
   'statis' is not defined. The variable was never initialised.
   Fix: `status_count = status_count + 1` (or just `count += 1`)
 
-Bug 2: line 35 — `version = app_version`
+Bug 2: line 35 — `version = APP_VERSION  # Fixed: was app_version (incorrect case)`
   'app_version' is not defined. The constant is APP_VERSION (all caps).
   Fix: `version = APP_VERSION`
 
@@ -40,7 +40,7 @@ def process_requests(requests: list) -> int:
 
 def get_version() -> str:
     """Return the current application version string."""
-    version = app_version        # Bug 2: NameError — 'app_version' is not defined (should be APP_VERSION)
+    version = APP_VERSION  # Fixed: was app_version (incorrect case)
     return version
 
 
@@ -61,6 +61,6 @@ if __name__ == "__main__":
     total = process_requests(sample_requests)
     log.info(f"Total requests processed: {total}")
 
-    # Bug 2 fires here — get_version calls `version = app_version`
+    # Bug 2 fires here — get_version calls `version = APP_VERSION  # Fixed: was app_version (incorrect case)`
     log.info(f"Version: {get_version()}")
     log.info("Health check: %s", health_check())
