@@ -14,8 +14,9 @@ on:
         default: "true"
 
 permissions:
-  contents: read
-  actions: read    # needed to download artifacts from the triggering workflow run
+  contents: write         # push auto-fix branch
+  pull-requests: write    # open PR with the fix
+  actions: read           # download artifacts from the triggering workflow run
 
 jobs:
   run-capstone-agent:
@@ -53,6 +54,7 @@ jobs:
           FAILURE_LOG_PATH: ${{ github.event_name == 'workflow_run' && '/tmp/module4-log/broken_app.log' || '' }}
           GH_EVENT_NAME: ${{ github.event_name }}
           GH_SIMULATE: ${{ github.event.inputs.simulate }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ "$GH_EVENT_NAME" = "workflow_run" ]; then
             python module8/platform_agent.py
