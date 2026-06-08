@@ -55,7 +55,7 @@ import os
 import sys
 import json
 import argparse
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -579,21 +579,36 @@ def run_pipeline(event: dict) -> dict:
             run_step_diagnose, event, steps["ingest"], steps["history"]
         )
         future_gate = executor.submit(run_step_gate, event, steps["ingest"])
+
         try:
-            diagnose_result = future_diagnose.result()
-            gate_result = future_gate.result()
-        except NotImplementedError as exc:
-            print(
-                "\n💡  TODO: One of the parallel step functions is not yet implemented."
-            )
-            print(
-                "    Implement run_step_diagnose() and run_step_gate() in platform_agent.py,"
-            )
-            print("    following the exact same 3-line pattern as run_step_ingest().")
-            print(
-                "    To test the pipeline without implementing, run: python module8/platform_agent.py --mock --simulate"
-            )
-            raise
+            diagnose_result = future_diagnose.result(timeout=30)
+        except FutureTimeoutError:
+            print("[platform_agent] DIAGNOSE timed out after 30 s — using fallback.")
+            diagnose_result = {
+                "error_type": "TIMEOUT",
+                "root_cause": "DIAGNOSE agent timed out — root cause unknown.",
+                "confidence": "LOW",
+                "fix_possible": False,
+                "fix_script": "",
+                "post_mortem": {
+                    "what_happened": "DIAGNOSE agent exceeded the 30-second timeout.",
+                    "why_it_happened": "Agent latency too high.",
+                    "how_to_prevent": "Investigate agent response times.",
+                },
+            }
+
+        try:
+            gate_result = future_gate.result(timeout=30)
+        except FutureTimeoutError:
+            print("[platform_agent] GATE timed out after 30 s — using fallback.")
+            gate_result = {
+                "decision": "REJECT",
+                "rationale": "GATE agent timed out — defaulting to REJECT for safety.",
+                "blocking_issues": ["Gate evaluation timed out"],
+                "conditions": [],
+                "risk_score": "HIGH",
+                "escalate": True,
+            }
 
     steps["diagnose"] = {**diagnose_result, "status": "completed"}
     steps["gate"] = {**gate_result, "status": "completed"}
