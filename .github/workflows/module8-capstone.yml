@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  actions: read    # needed to download artifacts from the triggering workflow run
 
 jobs:
   run-capstone-agent:
@@ -36,12 +37,26 @@ jobs:
       - name: Install dependencies
         run: pip install anthropic
 
+      - name: Download Module 4 failure log
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: broken-app-log
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/module4-log/
+
       - name: Run Module 8 capstone agent
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           MOCK_MODE: ${{ secrets.ANTHROPIC_API_KEY == '' && '1' || '0' }}
+          FAILURE_LOG_PATH: ${{ github.event_name == 'workflow_run' && '/tmp/module4-log/broken_app.log' || '' }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          GH_SIMULATE: ${{ github.event.inputs.simulate }}
         run: |
-          if [ "${{ github.event.inputs.simulate }}" = "false" ]; then
+          if [ "$GH_EVENT_NAME" = "workflow_run" ]; then
+            python module8/platform_agent.py
+          elif [ "$GH_SIMULATE" = "false" ]; then
             python module8/platform_agent.py
           else
             python module8/platform_agent.py --simulate

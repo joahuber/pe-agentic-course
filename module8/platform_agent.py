@@ -225,6 +225,23 @@ def load_event(simulate: bool) -> dict:
             ],
             "rollback_available": True,
         }
+
+    # When triggered by a workflow_run event, FAILURE_LOG_PATH points to the
+    # real broken_app.log artifact downloaded from the Module 4 run.
+    log_path = os.environ.get("FAILURE_LOG_PATH")
+    if log_path and Path(log_path).exists():
+        log_lines = Path(log_path).read_text().splitlines()
+        return {
+            "trigger": "github_actions_failure",
+            "pipeline_id": f"m4-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
+            "repo": os.environ.get("GITHUB_REPOSITORY", "unknown"),
+            "branch": os.environ.get("GITHUB_REF_NAME", "main"),
+            "commit_sha": os.environ.get("GITHUB_SHA", "unknown")[:8],
+            "failure_stage": "run-broken-app",
+            "logs": log_lines[-50:],
+            "rollback_available": False,
+        }
+
     sample = Path(__file__).parent / "sample_data.json"
     return json.loads(sample.read_text())
 
