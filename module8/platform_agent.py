@@ -303,7 +303,9 @@ def create_fix_pr(fix_result: dict, pipeline_id: str, fix_script_path: str) -> s
         subprocess.run(
             ["git", "checkout", "-b", branch], check=True, capture_output=True
         )
-        subprocess.run(["git", "add", fix_script_path], check=True, capture_output=True)
+        subprocess.run(
+            ["git", "add", "-f", fix_script_path], check=True, capture_output=True
+        )
         subprocess.run(
             ["git", "commit", "-m", f"auto-fix: {title}"],
             check=True,
