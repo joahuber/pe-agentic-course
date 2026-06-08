@@ -270,7 +270,7 @@ def save_fix_script(script_content: str, pipeline_id: str) -> Path:
 
 
 def create_fix_pr(fix_result: dict, pipeline_id: str, fix_script_path: str) -> str:
-    """Create a GitHub PR containing the auto-fix script. Returns the PR URL."""
+    """Execute the fix script, commit the resulting code change, and open a PR."""
     import subprocess
 
     if not os.environ.get("GITHUB_TOKEN"):
@@ -303,9 +303,10 @@ def create_fix_pr(fix_result: dict, pipeline_id: str, fix_script_path: str) -> s
         subprocess.run(
             ["git", "checkout", "-b", branch], check=True, capture_output=True
         )
-        subprocess.run(
-            ["git", "add", "-f", fix_script_path], check=True, capture_output=True
-        )
+        # Run the fix script — it modifies the source file(s) in place
+        subprocess.run(["python", fix_script_path], check=True)
+        # Stage every tracked file the script modified
+        subprocess.run(["git", "add", "-u"], check=True, capture_output=True)
         subprocess.run(
             ["git", "commit", "-m", f"auto-fix: {title}"],
             check=True,
