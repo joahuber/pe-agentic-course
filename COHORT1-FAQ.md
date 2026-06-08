@@ -7,7 +7,7 @@
 
 ## General / Setup
 
-### Q: Do we get API credits as part of the course? The Anthropic console is showing $20 and $50 plans.
+### Q: Do we get API credits as part of the course? The Anthropic console is showing $20 and $50 plans
 
 **Asked by:** Uzma Syed
 
@@ -16,6 +16,7 @@ The API key is not required to complete any exercise — every script in the cou
 That said, the total API usage across all 8 modules is small — a few dollars at most, depending on how many times you run each exercise. We'd encourage you to invest that — getting responses from the actual model rather than a simulation is where the real learning happens. You'll see how confidence levels shift with different prompts, how the model handles edge cases in your logs, and how structured JSON output behaves under real conditions. Mock mode is there so nobody is blocked, but live mode is where the course comes to life.
 
 To get an API key:
+
 1. Go to [console.anthropic.com](https://console.anthropic.com)
 2. Sign up and add a small credit (the minimum top-up covers the entire course several times over)
 3. Generate a key and set it in your environment: `export ANTHROPIC_API_KEY=your_key_here`
@@ -84,7 +85,7 @@ python module1/hello_claude.py --mock     # local mock response, no API call
 
 ---
 
-> **A note on getting support:** LinkedIn works, but the fastest way to get help between sessions is the **Platform Engineering Slack workspace** — there's a dedicated course channel. Email support@platformengineering.org with your name and email address to be added. Questions posted there benefit the whole cohort, and often get answered by peers before the instructor gets to them.
+> **A note on getting support:** LinkedIn works, but the fastest way to get help between sessions is the **Platform Engineering Slack workspace** — there's a dedicated course channel. Email <support@platformengineering.org> with your name and email address to be added. Questions posted there benefit the whole cohort, and often get answered by peers before the instructor gets to them.
 
 ---
 
@@ -95,6 +96,7 @@ python module1/hello_claude.py --mock     # local mock response, no API call
 Fork first, then clone your fork. The distinction matters because GitHub Actions secrets (where you store your `ANTHROPIC_API_KEY`) can only be added to repositories you own. If you clone the original repo directly, you won't have a Settings tab and won't be able to add secrets.
 
 Correct flow:
+
 1. Go to [github.com/InternalDeveloperPlatform/pe-agentic-course](https://github.com/InternalDeveloperPlatform/pe-agentic-course) and click **Fork**
 2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/pe-agentic-course.git`
 3. Add your API key: Settings → Secrets and variables → Actions → New repository secret → `ANTHROPIC_API_KEY`

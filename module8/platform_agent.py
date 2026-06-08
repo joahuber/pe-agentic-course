@@ -68,55 +68,55 @@ from shared.output import save_json, to_step_summary, to_github_issue
 MOCK_MODE = "--mock" in sys.argv or os.environ.get("MOCK_MODE") == "1"
 
 MOCK_REPORT = {
-    "pipeline_id":   "pipe-2024-0130-012",
+    "pipeline_id": "pipe-2024-0130-012",
     "run_timestamp": "2026-04-03T14:00:00Z",
     "steps": {
         "ingest": {
-            "status":        "completed",
-            "event_type":    "CI_FAILURE",
-            "service":       "platform-service",
+            "status": "completed",
+            "event_type": "CI_FAILURE",
+            "service": "platform-service",
             "failure_stage": "integration-tests",
-            "severity":      "P2",
-            "summary":       "33 integration tests failed due to DB migration lock from a previous deployment.",
+            "severity": "P2",
+            "summary": "33 integration tests failed due to DB migration lock from a previous deployment.",
         },
         "diagnose": {
-            "status":       "completed",
-            "error_type":   "MigrationLockTimeout",
-            "root_cause":   "A stale migration lock from deploy-2024-0130-011 is blocking the integration test DB setup. This is an infrastructure state issue, not a code defect.",
-            "confidence":   "MEDIUM",
+            "status": "completed",
+            "error_type": "MigrationLockTimeout",
+            "root_cause": "A stale migration lock from deploy-2024-0130-011 is blocking the integration test DB setup. This is an infrastructure state issue, not a code defect.",
+            "confidence": "MEDIUM",
             "fix_possible": False,
             "post_mortem": {
-                "what_happened":   "Migration lock was not released after the previous deployment.",
+                "what_happened": "Migration lock was not released after the previous deployment.",
                 "why_it_happened": "No lock TTL is configured in the migration toolchain.",
-                "how_to_prevent":  "Add a 30-minute lock TTL and a pre-flight lock check to the deploy pipeline.",
+                "how_to_prevent": "Add a 30-minute lock TTL and a pre-flight lock check to the deploy pipeline.",
             },
         },
         "gate": {
-            "status":          "completed",
-            "decision":        "REJECT",
-            "rationale":       "Integration tests cannot run while the DB migration lock is held. Gate evaluation deferred.",
+            "status": "completed",
+            "decision": "REJECT",
+            "rationale": "Integration tests cannot run while the DB migration lock is held. Gate evaluation deferred.",
             "blocking_issues": ["DB migration lock held by deploy-2024-0130-011"],
-            "risk_score":      "HIGH",
-            "escalate":        True,
+            "risk_score": "HIGH",
+            "escalate": True,
         },
         "conflict": {
-            "detected":   False,
-            "type":       "NO_CONFLICT",
+            "detected": False,
+            "type": "NO_CONFLICT",
             "resolution": "PROCEED",
-            "summary":    "DIAGNOSE: MEDIUM confidence. GATE: REJECT. Agents agree — both recommend escalation, no auto-fix attempted.",
+            "summary": "DIAGNOSE: MEDIUM confidence. GATE: REJECT. Agents agree — both recommend escalation, no auto-fix attempted.",
         },
         "fix_or_escalate": {
-            "status":               "completed",
-            "path":                 "ESCALATE",
-            "reason":               "MEDIUM confidence + infrastructure state issue — human intervention required before any database operation.",
-            "auto_fix_attempted":   False,
-            "github_issue_title":   "[Agent] DB Migration Lock Blocking Integration Tests — Manual Intervention Required",
-            "github_issue_body":    "## Agent Diagnosis\n\n**Confidence:** MEDIUM\n**Action:** ESCALATE\n\n### Root Cause\nStale migration lock from deploy-2024-0130-011 is blocking 33 integration tests.\n\n### Proposed Fix\n```sql\nDELETE FROM migrations_lock WHERE locked_at < NOW() - INTERVAL '1 hour';\n```\n\n### Next Steps\n1. DBA verifies the lock state\n2. Execute DELETE after approval\n3. Re-trigger the pipeline\n\n---\n_Written by Ajay · ajay@platformetrics.com · ajay@platformengineering.org_",
-            "recommended_action":   "ESCALATE",
-            "escalate":             True,
+            "status": "completed",
+            "path": "ESCALATE",
+            "reason": "MEDIUM confidence + infrastructure state issue — human intervention required before any database operation.",
+            "auto_fix_attempted": False,
+            "github_issue_title": "[Agent] DB Migration Lock Blocking Integration Tests — Manual Intervention Required",
+            "github_issue_body": "## Agent Diagnosis\n\n**Confidence:** MEDIUM\n**Action:** ESCALATE\n\n### Root Cause\nStale migration lock from deploy-2024-0130-011 is blocking 33 integration tests.\n\n### Proposed Fix\n```sql\nDELETE FROM migrations_lock WHERE locked_at < NOW() - INTERVAL '1 hour';\n```\n\n### Next Steps\n1. DBA verifies the lock state\n2. Execute DELETE after approval\n3. Re-trigger the pipeline\n\n---\n_Written by Ajay · ajay@platformetrics.com · ajay@platformengineering.org_",
+            "recommended_action": "ESCALATE",
+            "escalate": True,
         },
         "report": {
-            "status":              "completed",
+            "status": "completed",
             "post_mortem_summary": "A stale migration lock from the previous deployment blocked 33 integration tests. The agent correctly assessed MEDIUM confidence (infrastructure state, not a code defect) and escalated to a human. Prevention: add a 30-minute migration lock TTL and a pre-flight lock check to the deployment pipeline.",
             "recommendations": [
                 "Configure a 30-minute TTL on all migration locks.",
@@ -126,17 +126,17 @@ MOCK_REPORT = {
         },
     },
     "final_output": {
-        "recommended_action":  "ESCALATE",
-        "escalate":            True,
-        "confidence":          "MEDIUM",
+        "recommended_action": "ESCALATE",
+        "escalate": True,
+        "confidence": "MEDIUM",
         "conflict": {
-            "detected":   False,
-            "type":       "NO_CONFLICT",
+            "detected": False,
+            "type": "NO_CONFLICT",
             "resolution": "PROCEED",
-            "summary":    "DIAGNOSE: MEDIUM confidence. GATE: REJECT. Agents agree.",
+            "summary": "DIAGNOSE: MEDIUM confidence. GATE: REJECT. Agents agree.",
         },
-        "github_issue_title":  "[Agent] DB Migration Lock Blocking Integration Tests — Manual Intervention Required",
-        "github_issue_body":   "## Agent Diagnosis\n\n**Confidence:** MEDIUM\n**Action:** ESCALATE\n\n### Root Cause\nStale migration lock from deploy-2024-0130-011 blocking 33 integration tests.\n\n---\n_Written by Ajay · ajay@platformetrics.com · ajay@platformengineering.org_",
+        "github_issue_title": "[Agent] DB Migration Lock Blocking Integration Tests — Manual Intervention Required",
+        "github_issue_body": "## Agent Diagnosis\n\n**Confidence:** MEDIUM\n**Action:** ESCALATE\n\n### Root Cause\nStale migration lock from deploy-2024-0130-011 blocking 33 integration tests.\n\n---\n_Written by Ajay · ajay@platformetrics.com · ajay@platformengineering.org_",
         "post_mortem_summary": "Stale migration lock blocked integration tests. Agent escalated correctly at MEDIUM confidence.",
     },
 }
@@ -199,24 +199,25 @@ You are a post-mortem report writer. Summarise the full pipeline execution. Retu
 """
 
 AGENT_CONFIG = {
-    "model":      "claude-opus-4-5-20251101",
+    "model": "claude-opus-4-5-20251101",
     "max_tokens": 4096,
 }
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
+
 def load_event(simulate: bool) -> dict:
     """Load the CI failure event. --simulate injects a synthetic event."""
     if simulate:
         return {
-            "trigger":            "github_actions_failure",
-            "pipeline_id":        f"sim-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
-            "repo":               "org/platform-service",
-            "branch":             "main",
-            "commit_sha":         "abc1234",
-            "failure_stage":      "integration-tests",
-            "test_results":       {"total": 980, "passed": 947, "failed": 33},
+            "trigger": "github_actions_failure",
+            "pipeline_id": f"sim-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}",
+            "repo": "org/platform-service",
+            "branch": "main",
+            "commit_sha": "abc1234",
+            "failure_stage": "integration-tests",
+            "test_results": {"total": 980, "passed": 947, "failed": 33},
             "logs": [
                 "ERROR [integration] DB migration timeout after 30s",
                 "ERROR [integration] 33 tests failed: all depend on users table",
@@ -254,6 +255,7 @@ def save_fix_script(script_content: str, pipeline_id: str) -> Path:
 # ── Pipeline step functions ────────────────────────────────────────────────────
 # Step 1 is fully implemented. Use it as the pattern for Steps 2–5.
 
+
 def run_step_ingest(event: dict) -> dict:
     """Step 1 — INGEST: classify the failure event.
 
@@ -276,9 +278,8 @@ def run_step_diagnose(event: dict, ingest: dict) -> dict:
     classification so it has the full picture. Build the dict, call
     run_step() with DIAGNOSE_PROMPT, and return the result.
     """
-    # TODO: build context dict combining event and ingest result
-    # TODO: call run_step("DIAGNOSE", DIAGNOSE_PROMPT, context) and return the result
-    raise NotImplementedError("Complete run_step_diagnose() — see the docstring for the pattern.")
+    context = {"event": event, "classification": ingest}
+    return run_step("DIAGNOSE", DIAGNOSE_PROMPT, context)
 
 
 def run_step_gate(event: dict, ingest: dict) -> dict:
@@ -297,7 +298,8 @@ def run_step_gate(event: dict, ingest: dict) -> dict:
     """
     # TODO: build context dict combining event and ingest result
     # TODO: call run_step("GATE", GATE_PROMPT, context) and return the result
-    raise NotImplementedError("Complete run_step_gate() — use ingest, not diagnose.")
+    context = {"event": event, "classification": ingest}
+    return run_step("GATE", GATE_PROMPT, context)
 
 
 def detect_conflict(diagnose: dict, gate: dict) -> dict:
@@ -313,13 +315,13 @@ def detect_conflict(diagnose: dict, gate: dict) -> dict:
     This function is provided — do not modify it.
     """
     gate_decision = gate.get("decision", "REJECT")
-    confidence    = diagnose.get("confidence", "LOW")
-    fix_possible  = diagnose.get("fix_possible", False)
+    confidence = diagnose.get("confidence", "LOW")
+    fix_possible = diagnose.get("fix_possible", False)
 
     if gate_decision == "REJECT" and fix_possible and confidence == "HIGH":
         return {
-            "detected":   True,
-            "type":       "HARD_CONFLICT",
+            "detected": True,
+            "type": "HARD_CONFLICT",
             "resolution": "SAFETY_FIRST_ESCALATE",
             "summary": (
                 f"DIAGNOSE: HIGH confidence, fix_possible=true. "
@@ -327,10 +329,13 @@ def detect_conflict(diagnose: dict, gate: dict) -> dict:
                 "Hard conflict — Safety First: block auto-fix, escalate to human."
             ),
         }
-    if gate_decision in ("APPROVE", "APPROVE_WITH_CONDITIONS") and confidence in ("MEDIUM", "LOW"):
+    if gate_decision in ("APPROVE", "APPROVE_WITH_CONDITIONS") and confidence in (
+        "MEDIUM",
+        "LOW",
+    ):
         return {
-            "detected":   True,
-            "type":       "SOFT_CONFLICT",
+            "detected": True,
+            "type": "SOFT_CONFLICT",
             "resolution": "SOFT_ESCALATE",
             "summary": (
                 f"DIAGNOSE: {confidence} confidence. "
@@ -338,10 +343,10 @@ def detect_conflict(diagnose: dict, gate: dict) -> dict:
             ),
         }
     return {
-        "detected":   False,
-        "type":       "NO_CONFLICT",
+        "detected": False,
+        "type": "NO_CONFLICT",
         "resolution": "PROCEED",
-        "summary":    f"DIAGNOSE: {confidence} confidence. GATE: {gate_decision}. Agents agree.",
+        "summary": f"DIAGNOSE: {confidence} confidence. GATE: {gate_decision}. Agents agree.",
     }
 
 
@@ -369,11 +374,12 @@ def run_step_fix_or_escalate(
       - conflict['resolution'] != 'SAFETY_FIRST_ESCALATE'
       - 'migration' not in the event logs (never auto-fix DB state)
     """
-    # TODO: build context dict including event, diagnose, gate, and conflict
-    # TODO: call run_step("FIX_OR_ESCALATE", FIX_OR_ESCALATE_PROMPT, context)
-    # TODO: handle AUTO_FIX path — call save_fix_script() if script is present
-    # TODO: return the result
-    raise NotImplementedError("Complete run_step_fix_or_escalate().")
+    context = {"event": event, "diagnose": diagnose, "gate": gate, "conflict": conflict}
+    result = run_step("FIX_OR_ESCALATE", FIX_OR_ESCALATE_PROMPT, context)
+    if result.get("path") == "AUTO_FIX" and result.get("auto_fix_script"):
+        fix_path = save_fix_script(result["auto_fix_script"], pipeline_id)
+        result["fix_script_path"] = str(fix_path)
+    return result
 
 
 def generate_report(pipeline_id: str, steps: dict) -> dict:
@@ -382,12 +388,12 @@ def generate_report(pipeline_id: str, steps: dict) -> dict:
     TODO: Build context from pipeline_id and the full steps dict, call
     run_step() with REPORT_PROMPT, and return the result.
     """
-    # TODO: build context dict
-    # TODO: call run_step("REPORT", REPORT_PROMPT, context) and return the result
-    raise NotImplementedError("Complete generate_report().")
+    context = {"pipeline_id": pipeline_id, "steps": steps}
+    return run_step("REPORT", REPORT_PROMPT, context)
 
 
 # ── Orchestrator — do not modify ───────────────────────────────────────────────
+
 
 def run_pipeline(event: dict) -> dict:
     """Multi-agent orchestrator. Already wired — do not edit.
@@ -413,19 +419,25 @@ def run_pipeline(event: dict) -> dict:
     print("\n[Steps 2+3/5] DIAGNOSE + GATE running in parallel...")
     with ThreadPoolExecutor(max_workers=2) as executor:
         future_diagnose = executor.submit(run_step_diagnose, event, steps["ingest"])
-        future_gate     = executor.submit(run_step_gate,     event, steps["ingest"])
+        future_gate = executor.submit(run_step_gate, event, steps["ingest"])
         try:
             diagnose_result = future_diagnose.result()
-            gate_result     = future_gate.result()
+            gate_result = future_gate.result()
         except NotImplementedError as exc:
-            print("\n💡  TODO: One of the parallel step functions is not yet implemented.")
-            print("    Implement run_step_diagnose() and run_step_gate() in platform_agent.py,")
+            print(
+                "\n💡  TODO: One of the parallel step functions is not yet implemented."
+            )
+            print(
+                "    Implement run_step_diagnose() and run_step_gate() in platform_agent.py,"
+            )
             print("    following the exact same 3-line pattern as run_step_ingest().")
-            print("    To test the pipeline without implementing, run: python module8/platform_agent.py --mock --simulate")
+            print(
+                "    To test the pipeline without implementing, run: python module8/platform_agent.py --mock --simulate"
+            )
             raise
 
     steps["diagnose"] = {**diagnose_result, "status": "completed"}
-    steps["gate"]     = {**gate_result,     "status": "completed"}
+    steps["gate"] = {**gate_result, "status": "completed"}
 
     # Conflict check — Safety First rule (mirrors Module 7 detect_conflict)
     conflict = detect_conflict(steps["diagnose"], steps["gate"])
@@ -446,16 +458,16 @@ def run_pipeline(event: dict) -> dict:
     steps["report"] = {**generate_report(pipeline_id, steps), "status": "completed"}
 
     return {
-        "pipeline_id":   pipeline_id,
+        "pipeline_id": pipeline_id,
         "run_timestamp": datetime.now(timezone.utc).isoformat(),
-        "steps":         steps,
+        "steps": steps,
         "final_output": {
-            "recommended_action":  fix.get("recommended_action", "ESCALATE"),
-            "escalate":            fix.get("escalate", True),
-            "confidence":          steps["diagnose"].get("confidence", "LOW"),
-            "conflict":            conflict,
-            "github_issue_title":  fix.get("github_issue_title", ""),
-            "github_issue_body":   fix.get("github_issue_body", ""),
+            "recommended_action": fix.get("recommended_action", "ESCALATE"),
+            "escalate": fix.get("escalate", True),
+            "confidence": steps["diagnose"].get("confidence", "LOW"),
+            "conflict": conflict,
+            "github_issue_title": fix.get("github_issue_title", ""),
+            "github_issue_body": fix.get("github_issue_body", ""),
             "post_mortem_summary": steps["report"].get("post_mortem_summary", ""),
         },
     }
@@ -463,19 +475,28 @@ def run_pipeline(event: dict) -> dict:
 
 # ── Entry point ────────────────────────────────────────────────────────────────
 
+
 def main():
     parser = argparse.ArgumentParser(description="Module 8 Capstone Platform Agent")
-    parser.add_argument("--simulate", action="store_true",
-                        help="Inject a synthetic CI failure event instead of reading sample_data.json")
-    parser.add_argument("--mock", action="store_true",
-                        help="Return pre-defined responses — no API key needed")
+    parser.add_argument(
+        "--simulate",
+        action="store_true",
+        help="Inject a synthetic CI failure event instead of reading sample_data.json",
+    )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="Return pre-defined responses — no API key needed",
+    )
     args = parser.parse_args()
 
     event = load_event(simulate=args.simulate)
 
     if MOCK_MODE:
         print("[MOCK MODE] Returning pre-defined 5-step pipeline report.")
-        print("[MOCK MODE] Remove --mock and set ANTHROPIC_API_KEY to run the real pipeline.\n")
+        print(
+            "[MOCK MODE] Remove --mock and set ANTHROPIC_API_KEY to run the real pipeline.\n"
+        )
         result = MOCK_REPORT
     else:
         result = run_pipeline(event)
