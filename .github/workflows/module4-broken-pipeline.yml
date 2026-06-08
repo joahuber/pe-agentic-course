@@ -38,6 +38,7 @@ jobs:
       - name: Run broken app.py
         id: run
         run: |
+          set -o pipefail
           python module4/broken_app/app.py 2>&1 | tee /tmp/broken_app.log
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
 
