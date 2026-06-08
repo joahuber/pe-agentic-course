@@ -155,7 +155,8 @@ You are a CI/CD failure classifier. Analyse the failure event and return ONLY va
 DIAGNOSE_PROMPT = """\
 You are a root cause analysis agent. Diagnose the CI/CD failure and return ONLY valid JSON:
 - error_type (string): exception class or infrastructure error type
-- root_cause (string): one paragraph plain-English root cause explanation
+- root_cause (string): one paragraph plain-English root cause explanation, referencing the
+  deploy_history SHA that introduced the defect when identifiable
 - confidence (HIGH|MEDIUM|LOW): HIGH for deterministic code errors, MEDIUM for state inference
 - fix_possible (boolean): true only if a safe, deterministic code fix can be generated
 - fix_script (string): Python fix script — include only when fix_possible=true, else empty string
@@ -358,8 +359,62 @@ def run_step_ingest(event: dict) -> dict:
     return run_step("INGEST", INGEST_PROMPT, event)
 
 
-def run_step_diagnose(event: dict, ingest: dict) -> dict:
-    """Step 2 — DIAGNOSE: root cause analysis.
+def run_step_history(event: dict) -> dict:
+    """Step 2 — HISTORY: fetch recent commit SHAs to enrich root cause analysis.
+
+    Calls the GitHub Commits API when GITHUB_TOKEN is available; falls back to
+    a minimal sample so the pipeline stays runnable locally and in mock mode.
+    """
+    import urllib.request
+    import urllib.error
+
+    token = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+
+    if token and repo:
+        try:
+            url = f"https://api.github.com/repos/{repo}/commits?per_page=10"
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "Accept": "application/vnd.github+json",
+                    "X-GitHub-Api-Version": "2022-11-28",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                commits = json.loads(resp.read())
+            history = [
+                {
+                    "sha": c["sha"][:8],
+                    "message": c["commit"]["message"].splitlines()[0],
+                    "author": c["commit"]["author"]["name"],
+                    "timestamp": c["commit"]["author"]["date"],
+                }
+                for c in commits
+            ]
+            print(
+                f"[platform_agent] Fetched {len(history)} recent commits from GitHub API."
+            )
+            return {"recent_commits": history, "source": "github_api"}
+        except urllib.error.URLError as exc:
+            print(f"[platform_agent] History fetch failed: {exc} — using fallback.")
+
+    # Fallback: include only the failing commit so DIAGNOSE still has a reference point
+    return {
+        "recent_commits": [
+            {
+                "sha": str(event.get("commit_sha", "unknown"))[:8],
+                "message": "current failing commit",
+                "timestamp": "unknown",
+            }
+        ],
+        "source": "fallback",
+    }
+
+
+def run_step_diagnose(event: dict, ingest: dict, history: dict) -> dict:
+    """Step 3 — DIAGNOSE: root cause analysis.
 
     TODO: Follow the same pattern as run_step_ingest().
 
@@ -367,7 +422,7 @@ def run_step_diagnose(event: dict, ingest: dict) -> dict:
     classification so it has the full picture. Build the dict, call
     run_step() with DIAGNOSE_PROMPT, and return the result.
     """
-    context = {"event": event, "classification": ingest}
+    context = {"event": event, "classification": ingest, "deploy_history": history}
     return run_step("DIAGNOSE", DIAGNOSE_PROMPT, context)
 
 
@@ -508,15 +563,21 @@ def run_pipeline(event: dict) -> dict:
     print("═" * 60)
 
     # Step 1 — INGEST (sequential: every later step reads from this)
-    print("\n[Step 1/5] INGEST")
+    print("\n[Step 1/6] INGEST")
     steps["ingest"] = {**run_step_ingest(event), "status": "completed"}
 
-    # Steps 2 + 3 — DIAGNOSE and GATE run in parallel
+    # Step 2 — HISTORY: enrich with recent deploy SHAs before root cause analysis
+    print("\n[Step 2/6] HISTORY")
+    steps["history"] = {**run_step_history(event), "status": "completed"}
+
+    # Steps 3 + 4 — DIAGNOSE and GATE run in parallel
     # GATE reads from INGEST directly — it does not need the diagnosis.
     # Both are independent specialists, so ThreadPoolExecutor gives real speedup.
-    print("\n[Steps 2+3/5] DIAGNOSE + GATE running in parallel...")
+    print("\n[Steps 3+4/6] DIAGNOSE + GATE running in parallel...")
     with ThreadPoolExecutor(max_workers=2) as executor:
-        future_diagnose = executor.submit(run_step_diagnose, event, steps["ingest"])
+        future_diagnose = executor.submit(
+            run_step_diagnose, event, steps["ingest"], steps["history"]
+        )
         future_gate = executor.submit(run_step_gate, event, steps["ingest"])
         try:
             diagnose_result = future_diagnose.result()
@@ -544,15 +605,15 @@ def run_pipeline(event: dict) -> dict:
         print(f"\n⚠️  CONFLICT: {conflict['type']} → {conflict['resolution']}")
         print(f"   {conflict['summary']}")
 
-    # Step 4 — FIX OR ESCALATE (receives both specialists + conflict verdict)
-    print("\n[Step 4/5] FIX OR ESCALATE")
+    # Step 5 — FIX OR ESCALATE (receives both specialists + conflict verdict)
+    print("\n[Step 5/6] FIX OR ESCALATE")
     fix = run_step_fix_or_escalate(
         event, steps["diagnose"], steps["gate"], conflict, pipeline_id
     )
     steps["fix_or_escalate"] = {**fix, "status": "completed"}
 
-    # Step 5 — REPORT
-    print("\n[Step 5/5] REPORT")
+    # Step 6 — REPORT
+    print("\n[Step 6/6] REPORT")
     steps["report"] = {**generate_report(pipeline_id, steps), "status": "completed"}
 
     return {
